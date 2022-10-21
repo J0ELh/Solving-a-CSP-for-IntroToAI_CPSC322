@@ -8,13 +8,13 @@ import java.util.List;
 
 /**
  * @author Joel Hempel
- * @since 10/18/2022
+ * @since 10/21/2022
  * Solves a constraint satisfaction problem with 8 variables and 17 constraints using DFS with pruning
  */
 public class ConstraintSatisfactionProblemSolver {
-    ArrayList<Integer> currentStateList;
+    char[] ordering = {'F', 'H', 'D', 'C', 'G', 'E', 'A', 'B'}; //CHANGE THIS TO HAVE A DIFFERENT ORDER OF CONSTRAINTS
+    ArrayList<Constraint> currentStateList;
     ArrayList<ArrayList<Integer>> solutionList;
-    Boolean isSolved = false;
     int numOfSolutionsFound = 0;
     int numberOfFailedChecks = 0;
 
@@ -23,9 +23,9 @@ public class ConstraintSatisfactionProblemSolver {
         currentStateList = new ArrayList<>();
         solutionList = new ArrayList<ArrayList<Integer>>();
         findSolutionDFS(0, currentStateList);
-        System.out.println("The number of failed checks is " + numberOfFailedChecks + " and the solutions (if any) are:\n");
+        System.out.println("The number of failed branches is " + numberOfFailedChecks + " and the solutions (if any) are:\n");
         for (int i = 0; i < solutionList.size(); i++){
-            printState(solutionList.get(i), true);
+            printState(solutionList.get(i));
         }
 
     }
@@ -37,39 +37,43 @@ public class ConstraintSatisfactionProblemSolver {
      * @param stateListIndex index of the list of parameters
      * @return Boolean whether the next path makes the solution better
      */
-    private Boolean findSolutionDFS(int stateListIndex, ArrayList<Integer> previousList){
-        ArrayList<Integer> tmpState = new ArrayList<>(previousList);
+    private Boolean findSolutionDFS(int stateListIndex, ArrayList<Constraint> previousList){
+        ArrayList<Constraint> tmpState = new ArrayList<>(previousList);
 
 
         if (previousList.size() == 8 && allConstraintsSatisfied(tmpState)){
-            solutionList.add(tmpState);
+            ArrayList<Integer> solList = new ArrayList<>();
+            for (int i = 0; i < tmpState.size(); i++) {
+                solList.add(tmpState.get(i).getValue());
+            }
+            solutionList.add(solList);
             this.numOfSolutionsFound++;
             return true;
         }
 
-
-        tmpState.add(1);
-
+        Constraint currentConstraint = new Constraint(ordering[stateListIndex]);
+        currentConstraint.setValue(1);
+        tmpState.add(currentConstraint);
 
         if (allConstraintsSatisfied(tmpState)) {
             findSolutionDFS(stateListIndex + 1, tmpState);
         }
 
         //test value of 2
-        tmpState.set(stateListIndex, tmpState.get(stateListIndex) + 1);
+        currentConstraint.setValue(2);
         if (allConstraintsSatisfied(tmpState)) {
             findSolutionDFS(stateListIndex + 1, tmpState);
         }
 
 
         //test value of 3
-        tmpState.set(stateListIndex, tmpState.get(stateListIndex) + 1);
+        currentConstraint.setValue(3);
         if (allConstraintsSatisfied(tmpState)) {
             findSolutionDFS(stateListIndex + 1, tmpState);
         }
 
         //test value of 4
-        tmpState.set(stateListIndex, tmpState.get(stateListIndex) + 1);
+        currentConstraint.setValue(4);
         if (allConstraintsSatisfied(tmpState)) {
             findSolutionDFS(stateListIndex + 1, tmpState);
         }
@@ -87,76 +91,166 @@ public class ConstraintSatisfactionProblemSolver {
      * Check constraints. Only check the constraints including variables that have been assigned already.
      * @return Boolean whether all constraints have been satisfied
      */
-    public Boolean allConstraintsSatisfied(List<Integer> list){
+    public Boolean allConstraintsSatisfied(List<Constraint> list){
+        //check which constraints are already contained in the list
+        int containsA = -1;
+        int containsB = -1;
+        int containsC = -1;
+        int containsD = -1;
+        int containsE = -1;
+        int containsF = -1;
+        int containsG = -1;
+        int containsH = -1;
+        //make sure whichever constraints are in the list are satisfied
+        for (int i = 0; i < list.size(); i++) {
+            switch(list.get(i).getName()) {
+                case 'A':
+                    containsA = i;
+                    break;
+                case 'B':
+                    containsB = i;
+                    break;
+                case 'C':
+                    containsC = i;
+                    break;
+                case 'D':
+                    containsD = i;
+                    break;
+                case 'E':
+                    containsE = i;
+                    break;
+                case 'F':
+                    containsF = i;
+                    break;
+                case 'G':
+                    containsG = i;
+                    break;
+                case 'H':
+                    containsH = i;
+                    break;
+            }
+
+            if (containsA >= 0 && containsG >= 0) {
+                if (list.get(containsA).getValue() <= list.get(containsG).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsA >= 0 && containsH >= 0) {
+                if (list.get(containsA).getValue() > list.get(containsH).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsF >= 0 && containsB >= 0) {
+                if (Math.abs(list.get(containsF).getValue() - list.get(containsB).getValue()) != 1) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsG >= 0 && containsH >= 0) {
+                if (list.get(containsG).getValue() >= list.get(containsH).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsG >= 0 && containsC >= 0) {
+                if (Math.abs(list.get(containsG).getValue() - list.get(containsC).getValue()) != 1) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsH >= 0 && containsC >= 0) {
+                if (Math.abs(list.get(containsH).getValue() - list.get(containsC).getValue()) %2 != 0) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsH >= 0 && containsD >= 0) {
+                if (list.get(containsH).getValue() == list.get(containsD).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsD >= 0 && containsG >= 0) {
+                if (list.get(containsD).getValue() < list.get(containsG).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsD >= 0 && containsC >= 0) {
+                if (list.get(containsD).getValue() == list.get(containsC).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsE >= 0 && containsC >= 0) {
+                if (list.get(containsE).getValue() == list.get(containsC).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsE >= 0 && containsD >= 0) {
+                if (list.get(containsE).getValue() >= list.get(containsD).getValue() -1) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsE >= 0 && containsH >= 0) {
+                if (list.get(containsE).getValue() == list.get(containsH).getValue() -2) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsG >= 0 && containsF >= 0) {
+                if (list.get(containsG).getValue() == list.get(containsF).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsH >= 0 && containsF >= 0) {
+                if (list.get(containsH).getValue() == list.get(containsF).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsC >= 0 && containsF >= 0) {
+                if (list.get(containsC).getValue() == list.get(containsF).getValue()) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsD >= 0 && containsF >= 0) {
+                if (list.get(containsD).getValue() == list.get(containsF).getValue() -1) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
+
+            if (containsE >= 0 && containsF >= 0) {
+                if (Math.abs(list.get(containsE).getValue() - list.get(containsF).getValue()) %2 != 1) {
+                    numberOfFailedChecks++;
+                    return false;
+                }
+            }
 
 
-        if (list.size() > 6 && list.get(0) <= list.get(6)) {
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 7 && list.get(0) > list.get(7)) {
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 5 && Math.abs(list.get(5)-list.get(1)) != 1) {
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 7 && list.get(6) >= list.get(7)) {
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 6 && Math.abs(list.get(6) - list.get(2)) != 1){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 7 && Math.abs(list.get(7)- list.get(2)) % 2 != 0){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 7 && list.get(7) == list.get(3)){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 6 && list.get(3) < list.get(6)){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 3 && list.get(3) == list.get(2)){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 4 && list.get(4) == list.get(2)){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 4 && list.get(4) >= list.get(3)-1){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 7 && list.get(4) == list.get(7)-2){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 6 && list.get(6) == list.get(5)){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 7 && list.get(7) == list.get(5)){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 5 && list.get(2) == list.get(5)){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 5 && list.get(3) == list.get(5)-1){
-            numberOfFailedChecks++;
-            return false;
-        }
-        if (list.size() > 5 && Math.abs(list.get(4) - list.get(5)) % 2 != 1){
-            numberOfFailedChecks++;
-            return false;
+
         }
 
 
@@ -164,11 +258,14 @@ public class ConstraintSatisfactionProblemSolver {
         return true;
     }
 
-    void printState(List<Integer> list, Boolean solved){
-        char tmpChar = 'A';
-        for (int i = 0; i < list.size(); i++){
-            System.out.print(tmpChar + " " + list.get(i) + "   ");
-            tmpChar++;
+    /**
+     * prints each variable and its value
+     * @param list the list of values
+     */
+    void printState(List<Integer> list){
+
+        for (int i = 0; i < list.size(); i++) {
+            System.out.print(ordering[i] + "" +list.get(i) + "   ");
         }
         System.out.println();
 
